@@ -1,66 +1,146 @@
-## Foundry
+# Avalanche Noir Kit Foundry
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+![Banner](images/banner.png)
 
-Foundry consists of:
+A professional starter kit for building privacy-preserving decentralized applications (dApps) on **Avalanche** using **Noir** zero-knowledge circuits. 
 
-- **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
-- **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
-- **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
-- **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+This kit provides a complete workflow: writing ZK circuits in Noir, generating proofs with TypeScript, and verifying them on-chain using Solidity smart contracts found on Avalanche.
 
-## Documentation
+## ⚡ Features
 
-https://book.getfoundry.sh/
+- **Noir Circuits**: Pre-configured circuits for arithmetic operations and cryptographic hashing.
+- **Avalanche C-Chain Support**: tailored for deployment on Avalanche's EVM-compatible chain.
+- **Foundry Integration**: Professional smart contract development, testing, and deployment environment.
+- **TypeScript Scripts**: Automated proof generation and witness calculation.
+- **Honk Verifier**: Uses the latest UltraHonk proving system for efficient proofs.
 
-## Usage
+## 🛠 Prerequisites
 
-### Build
+Ensure you have the following tools installed:
 
-```shell
-$ forge build
+- **[Noir](https://noir-lang.org/docs/getting_started/installation/)**: The ZK circuit language (`nargo`).
+- **[Barretenberg](https://barretenberg.aztec.network/docs/getting_started/)**: The proving backend (`bb`).
+- **[Foundry](https://book.getfoundry.sh/getting-started/installation)**: Ethereum development framework (`forge`, `cast`, `anvil`).
+- **[Node.js](https://nodejs.org/)** & **[Bun](https://bun.sh/)** (or npm/yarn): For running JavaScript/TypeScript scripts.
+
+## 📂 Project Structure
+
+```bash
+avalanche-noir-kit-foundry/
+├── circuits/           # Noir ZK circuits
+│   ├── multiplier2/    # Simple multiplication circuit
+│   └── password/       # Private password hashing circuit
+├── src/                # Solidity smart contracts
+│   ├── verifiers/      # Auto-generated Noir verifiers
+│   ├── Multiplier2.sol # Application contract for Multiplier2
+│   └── Password.sol    # Application contract for Password
+├── script/             # Foundry deployment scripts
+├── js-scripts/         # TypeScript scripts for proof generation
+├── test/               # Solidity tests
+└── foundry.toml        # Foundry configuration
 ```
 
-### Test
+## 🧩 Circuits Overview
 
-```shell
-$ forge test
+### 1. Multiplier2
+A fundamental circuit that proves knowledge of two factors that multiply to a specific public number.
+- **Private Inputs**: `a`, `b`
+- **Public Output**: `c = a * b`
+- **Use Case**: Proving computation correctness without revealing inputs.
+
+### 2. Password
+A privacy-focused circuit that proves a user knows the pre-image (password) of a specific hash without revealing the password itself.
+- **Private Input**: `password`
+- **Public Input**: `expected_hash`
+- **Logic**: `assert(Poseidon2::hash(password) == expected_hash)`
+- **Use Case**: Private login, gated access, or commit-reveal schemes.
+
+## 🚀 Getting Started
+
+### 1. Installation
+
+Clone the repository and install dependencies:
+
+```bash
+git clone https://github.com/DavidZapataOh/avalanche-noir-kit-foundry.git
+cd avalanche-noir-kit-foundry
+forge install
+bun install # or npm install
 ```
 
-### Format
+### 2. Compile Circuits
 
-```shell
-$ forge fmt
+Navigate to a circuit directory and compile using Nargo:
+
+```bash
+cd circuits/multiplier2
+nargo check
+nargo compile
 ```
 
-### Gas Snapshots
+### 3. Generate Verifier Contract
 
-```shell
-$ forge snapshot
+Generate the Solidity verifier contract from your circuit:
+
+First, write the verification key:
+```bash
+bb write_vk -b ./target/multiplier2.json -o ./target/vk
 ```
 
-### Anvil
-
-```shell
-$ anvil
+Then, generate the Solidity verifier:
+```bash
+bb write_solidity_verifier -k ./target/vk -o ../../src/verifiers/Multiplier2Verifier.sol
 ```
 
-### Deploy
+### 4. Deploy to Avalanche
 
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
+We use Foundry scripts for deployment. You'll need an RPC URL (e.g., Avalanche Fuji) and a Private Key.
+
+**Setup Environment:**
+Ensure your `foundry.toml` has the optimizer enabled to fit the verifier within the contract size limit:
+```toml
+optimizer = true
+optimizer_runs = 200
 ```
 
-### Cast
+**Deploy Command:**
 
-```shell
-$ cast <subcommand>
+```bash
+forge script script/Multiplier2.s.sol:Multiplier2Script \
+  --rpc-url https://api.avax-test.network/ext/bc/C/rpc \
+  --broadcast \
+  --private-key <YOUR_PRIVATE_KEY>
 ```
 
-### Help
+### 5. Generate Proofs (Client-Side)
 
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
+We use TypeScript scripts to generate proofs off-chain.
+
+**Using Bun (Recommended):**
+Bun handles TypeScript natively, so you can run the script directly:
+```bash
+bun run js-scripts/generateProofMultiplier2.ts <input_a> <input_b>
 ```
+Example:
+```bash
+bun run js-scripts/generateProofMultiplier2.ts 3 4
+```
+
+**Using Node:**
+If you prefer Node.js, you can use `tsx` to run the TypeScript file:
+```bash
+npx tsx js-scripts/generateProofMultiplier2.ts 3 4
+```
+This will create a `proof` file that can be sent to the smart contract.
+
+## 🧪 Testing
+
+Run functionality tests for the smart contracts:
+
+```bash
+forge test
+```
+
+## 📜 License
+
+This project is licensed under the **MIT License**.

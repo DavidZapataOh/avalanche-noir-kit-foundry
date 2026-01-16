@@ -4,6 +4,8 @@ out = "out"
 libs = ["lib"]
 
 ffi = true
+optimizer = true
+optimizer_runs = 200
 
 remappings = [
     "@poseidon/=lib/poseidon2-evm/",
